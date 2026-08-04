@@ -1,0 +1,30 @@
+name: Host Bot
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    # Chạy lại mỗi 2 giờ để né giới hạn chạy tối đa 6h/job của GitHub
+    - cron: "0 */2 * * *"
+
+concurrency:
+  group: discord-bot
+  cancel-in-progress: false
+
+jobs:
+  bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Cai dependencies
+        run: pip install -r requirements.txt
+
+      - name: Chay bot
+        env:
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+        run: python bot.py

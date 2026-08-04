@@ -1,0 +1,17 @@
+# Cấu hình cá nhân (chứa token)
+.env
+
+# Thư mục log & dữ liệu runtime
+logs/
+data/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# IDE
+.idea/
+.vscode/
