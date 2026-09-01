@@ -11,6 +11,7 @@ from core.database import Database
 from core.logging import setup_logging
 from database.guild_config import GuildConfigManager
 from services.leveling import LevelingService
+from utils.crash_log import install as install_crash_log, log_fatal_to_file
 
 logger = logging.getLogger("codi")
 
@@ -45,6 +46,7 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
+    install_crash_log()
     setup_logging()
     try:
         asyncio.run(main())
@@ -52,3 +54,4 @@ if __name__ == "__main__":
         logger.info("Bot đã bị dừng bởi người dùng.")
     except Exception as exc:
         logger.critical("Bot gặp lỗi nghiêm trọng: %s", exc, exc_info=True)
+        log_fatal_to_file("main_loop")
