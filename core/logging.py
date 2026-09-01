@@ -8,7 +8,7 @@ from logging.handlers import RotatingFileHandler
 from core.config import load_config
 
 # Tên logger dùng chung toàn bot
-LOGGER_NAME = "anhchangcodedao"
+LOGGER_NAME = "codi"
 
 
 def setup_logging() -> logging.Logger:

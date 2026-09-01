@@ -1,17 +1,18 @@
-"""Điểm khởi động chính của bot "Anh chàng Code dạo"."""
+"""Điểm khởi động chính của bot "Codi"."""
 
 from __future__ import annotations
 
 import asyncio
 import logging
 
-from core.bot import CodeDaoBot
+from core.bot import CodiBot
 from core.config import load_config
 from core.database import Database
 from core.logging import setup_logging
 from database.guild_config import GuildConfigManager
+from services.leveling import LevelingService
 
-logger = logging.getLogger("anhchangcodedao")
+logger = logging.getLogger("codi")
 
 
 async def main() -> None:
@@ -30,9 +31,10 @@ async def main() -> None:
         logger.critical("Không thể khởi tạo storage dữ liệu (%s). Kiểm tra thư mục data/.", exc)
         return
 
-    bot = CodeDaoBot()
+    bot = CodiBot()
     bot.db = Database.get_db()
     bot.config_manager = GuildConfigManager(bot.db)
+    bot.leveling_service = LevelingService(bot.db)
 
     try:
         await bot.start(cfg.token, reconnect=True)

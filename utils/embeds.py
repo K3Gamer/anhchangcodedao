@@ -24,7 +24,7 @@ COLOR_MAP: dict[str, discord.Color] = {
 class EmbedFactory:
     """Factory tạo Embed đồng nhất (thumbnail + footer + timestamp + màu Blurple)."""
 
-    def __init__(self, bot: "CodeDaoBot") -> None:
+    def __init__(self, bot: "CodiBot") -> None:
         self.bot = bot
 
     @property
@@ -35,7 +35,7 @@ class EmbedFactory:
 
     @property
     def _name(self) -> str:
-        return self.bot.user.name if self.bot.user else "Anh chàng Code dạo"
+        return self.bot.user.name if self.bot.user else "Codi"
 
     def base(
         self,

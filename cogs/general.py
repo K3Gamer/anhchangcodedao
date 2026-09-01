@@ -21,7 +21,7 @@ from utils.embeds import COLOR_MAP
 from utils.time import format_duration, parse_duration
 from views.help import CategoryMap, HelpView
 
-logger = logging.getLogger("anhchangcodedao")
+logger = logging.getLogger("codi")
 
 POLL_EMOJIS = ["🇦", "🇧", "🇨", "🇩", "🇪", "🇫", "🇬", "🇭", "🇮", "🇯"]
 
@@ -49,6 +49,15 @@ HELP_CATEGORIES: CategoryMap = {
             ("!chat", "Echo tin nhắn / file"),
         ],
     ),
+    "Leveling": (
+        "📊",
+        "Tính XP theo hoạt động và bảng xếp hạng.",
+        [
+            ("/rank", "Xem thẻ cấp độ XP (ảnh)"),
+            ("/leaderboard", "Xem bảng xếp hạng XP hình ảnh"),
+            ("/rank-reset", "Xóa dữ liệu XP (quản trị)"),
+        ],
+    ),
     "Quản trị": (
         "🛠️",
         "Các lệnh quản lý server.",
@@ -68,6 +77,7 @@ HELP_CATEGORIES: CategoryMap = {
             ("/role", "Thêm / Gỡ role"),
             ("/announce", "Gửi thông báo"),
             ("!dm", "Gửi tin nhắn riêng cho thành viên"),
+
         ],
     ),
     "Cảnh cáo": (
@@ -216,7 +226,7 @@ class General(commands.Cog):
     async def help(self, ctx: commands.Context) -> None:
         """Xem trợ giúp theo danh mục (Select Menu)."""
         embed = self.bot.embeds.base(
-            title="📚 Trợ giúp — Anh chàng Code dạo",
+            title="📚 Trợ giúp — Codi",
             description="Chọn một danh mục bên dưới để xem chi tiết các lệnh.",
         )
         view = HelpView(self.bot, HELP_CATEGORIES)

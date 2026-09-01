@@ -413,6 +413,7 @@ class Moderation(commands.Cog):
             raise BotError(f"Không thể gửi DM cho **{user}** — có thể họ đã tắt nhận tin nhắn riêng.")
         except discord.HTTPException:
             raise BotError(f"Gửi DM cho **{user}** thất bại, vui lòng thử lại sau.")
+        await ctx.message.delete()
         log_embed = self.bot.embeds.base(
             title="📩 DM",
             description=f"{ctx.author.mention} đã gửi DM cho {user.mention}\nNội dung: {message}",

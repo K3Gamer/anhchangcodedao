@@ -1,6 +1,6 @@
 services:
   - type: worker
-    name: anhchangcodedao
+    name: codi
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt

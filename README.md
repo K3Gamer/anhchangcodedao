@@ -1,4 +1,4 @@
-# 🤖 Anh chàng Code dạo
+# 🤖 Codi
 
 Discord Bot quản trị & hỗ trợ cộng đồng lập trình **"Code vì Đam Mê"**, viết bằng **Python 3.13+** và **discord.py 2.x**.
 
@@ -11,6 +11,7 @@ Discord Bot quản trị & hỗ trợ cộng đồng lập trình **"Code vì Đ
 | 📜 **Logging** | Join/Leave, xóa/sửa tin nhắn, voice, role, nickname, ban/unban, timeout, channel, emoji, sticker... |
 | 👮 **Moderation** | clear, lock/unlock, slowmode, kick, ban/unban, timeout, move/moveall, rename, role, announce |
 | ⚠️ **Warn** | warn / unwarn / warnings kèm lưu JSON file |
+| 📊 **Leveling** | Tự động cộng XP khi nhắn tin, thẻ `/rank` ảnh, bảng xếp hạng `/leaderboard` hình ảnh gradient hiện đại |
 | 🎫 **Ticket Góp ý** | Persistent buttons, transcript HTML, tự động đóng & gửi transcript |
 | ℹ️ **Info** | serverinfo, userinfo, botinfo, membercount, roleinfo, channelinfo, emojiinfo, avatar, banner, uptime |
 | 🎨 **Tiện ích** | poll, embed, remind, help tương tác (Select Menu) |
@@ -28,7 +29,7 @@ Toàn bộ **Buttons / Views / Modals / Select Menus** đều là **Persistent**
 ### 2. Cài thư viện
 
 ```bash
-cd AnhChangCodeDao
+cd Codi
 pip install -r requirements.txt
 ```
 
@@ -63,7 +64,7 @@ python bot.py
 ## 📂 Cấu trúc dự án
 
 ```
-AnhChangCodeDao/
+Codi/
 ├── bot.py                 # Điểm khởi động
 ├── requirements.txt
 ├── .env.example

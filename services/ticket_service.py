@@ -11,7 +11,7 @@ from database.tickets import TicketRepository
 from services.transcript import generate_transcript
 from utils.text import slugify
 
-logger = logging.getLogger("anhchangcodedao")
+logger = logging.getLogger("codi")
 
 TICKET_LABEL: dict[str, str] = {
     "gopy": "💡 Góp ý",

@@ -17,7 +17,7 @@ from utils.constants import DEFAULT_PREFIX
 from utils.embeds import EmbedFactory
 from views.tickets import TicketCloseView, TicketPanelView
 
-logger = logging.getLogger("anhchangcodedao")
+logger = logging.getLogger("codi")
 
 # Danh sách cog được nạp khi khởi động
 COGS: tuple[str, ...] = (
@@ -29,12 +29,13 @@ COGS: tuple[str, ...] = (
     "cogs.antinuke",
     "cogs.logging",
     "cogs.settings",
+    "cogs.leveling",
     "cogs.owner",
 )
 
 
-class CodeDaoBot(commands.Bot):
-    """Bot "Anh chàng Code dạo" — hỗ trợ prefix & slash command."""
+class CodiBot(commands.Bot):
+    """Bot "Codi" — hỗ trợ prefix & slash command."""
 
     def __init__(self) -> None:
         intents = discord.Intents.default()
