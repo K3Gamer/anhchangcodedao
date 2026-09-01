@@ -54,6 +54,27 @@ DISCORD_TOKEN=token_cua_bot
 python bot.py
 ```
 
+### Hoạt động trên GitHub Actions
+
+> ⚠️ **Lưu ý quan trọng:** GitHub Actions **không phải** giải pháp host 24/7 hoàn hảo:
+> - Free runner bị **giới hạn tối đa ~6h/job** — bot sẽ tự khởi động lại mỗi 6h qua cron.
+> - Runner bị **hủy sau mỗi job** — mọi file tạm đều mất.
+> - Gói free của repo **private** chỉ có giới hạn phút chạy/tháng; chạy 24/7 sẽ tiêu tốn rất nhiều phút.
+
+Workflow `.github/workflows/bot.yml` tự động:
+1. Checkout code, cài dependencies.
+2. **Pull dữ liệu** từ nhánh `data` trên GitHub (nơi lưu XP/config/warn/ticket).
+3. Chạy bot, đồng thời **đẩy dữ liệu lên nhánh `data` mỗi 5 phút** để không mất XP.
+
+**Cách bật:**
+1. Vào repo → **Settings → Secrets and variables → Actions** → thêm secret `DISCORD_TOKEN` = token bot.
+2. Vào tab **Actions** → chọn workflow **Host Bot** → **Run workflow** để chạy lần đầu.
+3. Sau đó bot tự chạy lại mỗi 6h nhờ cron.
+
+Nhánh `data` được tạo/tự động đẩy bởi các script trong `.github/scripts/`:
+- `pull_data.sh` — kéo dữ liệu hiện có về `./data/` lúc khởi động.
+- `push_data.sh` — đẩy `./data/` lên nhánh `data` (force-push snapshot, giữ nhánh gọn nhẹ).
+
 ### 5. Khởi tạo hệ thống trên server
 
 - `/gopyticketsetup` — tạo panel Ticket Góp ý

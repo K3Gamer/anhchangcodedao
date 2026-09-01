@@ -3,8 +3,12 @@ name: Host Bot
 on:
   workflow_dispatch: {}
   schedule:
-    # Chạy lại mỗi 2 giờ để né giới hạn chạy tối đa 6h/job của GitHub
-    - cron: "0 */2 * * *"
+    # Chay lai moi 6h vi GH Actions job bi gioi han toi da ~6h/lan.
+    # Cron: 6h/1 lan -> bot online gan 100% (chi giat cuc moi 6h).
+    - cron: "10 */6 * * *"
+
+permissions:
+  contents: write
 
 concurrency:
   group: discord-bot
@@ -13,7 +17,7 @@ concurrency:
 jobs:
   bot:
     runs-on: ubuntu-latest
-    timeout-minutes: 110
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
 
@@ -24,7 +28,15 @@ jobs:
       - name: Cai dependencies
         run: pip install -r requirements.txt
 
-      - name: Chay bot
+      - name: Pull du lieu xuyen restart (nhanh data)
+        run: bash .github/scripts/pull_data.sh
+
+      - name: Chay bot (push du lieu dinh ky moi 5 phut)
         env:
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
-        run: python bot.py
+        run: |
+          bash -c 'while true; do sleep 300; bash .github/scripts/push_data.sh >/dev/null 2>&1; done' &
+          bash .github/scripts/push_data.sh
+          python bot.py
+        shell: bash
+        timeout-minutes: 348
