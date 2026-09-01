@@ -29,11 +29,14 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Pull du lieu xuyen restart (nhanh data)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: bash .github/scripts/pull_data.sh
 
       - name: Chay bot (push du lieu dinh ky moi 5 phut)
         env:
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           bash -c 'while true; do sleep 300; bash .github/scripts/push_data.sh >/dev/null 2>&1; done' &
           bash .github/scripts/push_data.sh
