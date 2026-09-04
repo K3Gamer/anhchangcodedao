@@ -1,7 +1,8 @@
 """Sinh ảnh bảng xếp hạng hiện đại với Pillow.
 
-Thiết kế: nền gradient Blurple, card trong suốt bo góc, avatar tròn,
-thanh XP gradient, top 3 được tô màu vàng/bạc/đồng, cột thứ hạng lớn.
+Thiết kế mới: nền tối hiện đại, card phẳng, avatar tròn,
+rank number lớn, tên + XP rõ ràng, thanh tiến trình ở dưới mỗi hàng.
+Top 3 được viền màu vàng/bạc/đồng.
 """
 
 from __future__ import annotations
@@ -14,33 +15,35 @@ import platform
 import aiohttp
 from PIL import Image, ImageDraw, ImageFont
 
-# Bảng màu
-BG_TOP = (31, 38, 74)         # đậm
-BG_BOTTOM = (88, 101, 242)    # Blurple sáng
-CARD_BG = (255, 255, 255, 40)  # card trắng trong suốt
-CARD_BG_SOLID = (44, 50, 95)
-TEXT_MAIN = (255, 255, 255)
-TEXT_DIM = (190, 198, 235)
-BAR_BG = (255, 255, 255, 45)
-BAR_FILL_A = (255, 214, 102)
-BAR_FILL_B = (255, 145, 77)
+# ── Bảng màu ──────────────────────────────────────────────────
+BG_DARK = (30, 31, 38)          # nền chính
+BG_CARD = (35, 36, 44)          # nền mỗi hàng
+BG_CARD_TOP3 = (40, 41, 52)    # nền top 3
+BORDER_TOP1 = (255, 215, 0)     # vàng
+BORDER_TOP2 = (192, 192, 192)   # bạc
+BORDER_TOP3 = (205, 127, 50)    # đồng
+TEXT_WHITE = (255, 255, 255)
+TEXT_GRAY = (150, 155, 175)
+TEXT_XP = (120, 200, 120)
+BAR_BG = (50, 52, 65)
+BAR_FILL = (88, 101, 242)       # Blurple
+BAR_FILL_TOP1 = (255, 215, 0)
+BAR_FILL_TOP2 = (192, 192, 192)
+BAR_FILL_TOP3 = (205, 127, 50)
+DIVIDER = (55, 56, 66)
 
-MEDAL = {
-    1: (255, 215, 64),
-    2: (196, 202, 217),
-    3: (205, 138, 61),
-}
-
-ROW_H = 96
-PAD = 40
+ROW_H = 90
+PAD_X = 24
+PAD_Y = 20
+CARD_RADIUS = 12
 
 
-def _rounded_avatar(img: Image.Image, size: int, radius: int) -> Image.Image:
-    """Cắt ảnh vuông bo tròn hoàn toàn (hình tròn)."""
+def _rounded_avatar(img: Image.Image, size: int) -> Image.Image:
+    """Cắt ảnh vuông bo tròn hoàn toàn."""
     img = img.resize((size, size), Image.LANCZOS)
     mask = Image.new("L", (size, size), 0)
     draw = ImageDraw.Draw(mask)
-    draw.ellipse((0, 0, size, size), fill=255)
+    draw.ellipse((0, 0, size - 1, size - 1), fill=255)
     out = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     out.paste(img, (0, 0), mask)
     return out
@@ -48,7 +51,9 @@ def _rounded_avatar(img: Image.Image, size: int, radius: int) -> Image.Image:
 
 async def _fetch_avatar(session: aiohttp.ClientSession, url: str) -> Image.Image:
     """Tải avatar; fallback về hình tròn mặc định nếu lỗi."""
-    default = Image.new("RGBA", (256, 256), (58, 65, 110, 255))
+    default = Image.new("RGBA", (256, 256), (88, 101, 242, 255))
+    if not url:
+        return default
     try:
         async with session.get(url, timeout=aiohttp.ClientTimeout(total=8)) as resp:
             if resp.status != 200:
@@ -60,69 +65,65 @@ async def _fetch_avatar(session: aiohttp.ClientSession, url: str) -> Image.Image
         return default
 
 
-def _font_candidates(weight: str) -> list[tuple[str, str]]:
-    """Danh sách (tên file, tên đầy đủ) font theo độ ưu tiên cho từng OS.
-
-    Ưu tiên font hỗ trợ tiếng Việt có dấu. DejaVuSans có sẵn trên mọi Linux.
-    """
+def _load_font(size: int, weight: str = "regular") -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+    """Nạp font hệ thống hỗ trợ tiếng Việt."""
     if weight == "bold":
-        return [
+        candidates = [
             ("DejaVuSans-Bold.ttf", "DejaVuSans-Bold"),
             ("arialbd.ttf", "Arial Bold"),
-            ("Arial-Bold.ttf", "Arial Bold"),
             ("segoeuib.ttf", "Segoe UI Bold"),
             ("LiberationSans-Bold.ttf", "LiberationSans-Bold"),
             ("NotoSans-Bold.ttf", "NotoSans-Bold"),
         ]
-    return [
-        ("DejaVuSans.ttf", "DejaVuSans"),
-        ("arial.ttf", "Arial"),
-        ("Arial.ttf", "Arial"),
-        ("segoeui.ttf", "Segoe UI"),
-        ("LiberationSans-Regular.ttf", "LiberationSans"),
-        ("NotoSans-Regular.ttf", "NotoSans"),
-        ("Arimo-Regular.ttf", "Arimo"),
-    ]
-
-
-def _font_dirs() -> list[str]:
-    """Các thư mục chứa font hệ thống theo nền tảng (thử hết, bỏ trùng)."""
-    system = platform.system()
-    dirs: list[str] = []
-    if system == "Darwin":
-        dirs += [
-            "/System/Library/Fonts",
-            "/System/Library/Fonts/Supplemental",
-            "/Library/Fonts",
+    else:
+        candidates = [
+            ("DejaVuSans.ttf", "DejaVuSans"),
+            ("arial.ttf", "Arial"),
+            ("segoeui.ttf", "Segoe UI"),
+            ("LiberationSans-Regular.ttf", "LiberationSans"),
+            ("NotoSans-Regular.ttf", "NotoSans"),
         ]
-    dirs += [
+
+    search_dirs = [
         "C:\\Windows\\Fonts",
         "/usr/share/fonts/truetype/dejavu",
         "/usr/share/fonts/truetype/liberation",
         "/usr/share/fonts/truetype/noto",
-        "/usr/share/fonts/truetype/arimo",
-        "/usr/local/share/fonts",
         "/usr/share/fonts",
+        "/System/Library/Fonts",
+        "/System/Library/Fonts/Supplemental",
+        "/Library/Fonts",
     ]
-    return list(dict.fromkeys(dirs))
 
-
-def _load_font(size: int, weight: str = "regular") -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
-    """Nạp font hệ thống hỗ trợ tiếng Việt; fallback về font mặc định của Pillow."""
-    search = _font_dirs()
-    for fname, _ in _font_candidates(weight):
-        for d in search:
+    for fname, _ in candidates:
+        for d in search_dirs:
             p = os.path.join(d, fname)
             try:
                 return ImageFont.truetype(p, size)
             except Exception:
                 continue
-    # Fallback: font mặc định (nhỏ nhất định)
     return ImageFont.load_default()
 
 
+def _truncate(text: str, max_len: int) -> str:
+    if len(text) <= max_len:
+        return text
+    return text[: max_len - 1] + "\u2026"
+
+
+def _draw_rounded_rect(
+    draw: ImageDraw.ImageDraw,
+    xy: tuple[int, int, int, int],
+    radius: int,
+    fill: tuple,
+    outline: tuple | None = None,
+    width: int = 0,
+) -> None:
+    draw.rounded_rectangle(xy, radius=radius, fill=fill, outline=outline, width=width)
+
+
 class LeaderboardRenderer:
-    """Nạp & vẽ ảnh leaderboard."""
+    """Vẽ ảnh leaderboard."""
 
     async def render(
         self,
@@ -130,117 +131,137 @@ class LeaderboardRenderer:
         top: int = 3,
         title: str = "Bảng xếp hạng XP",
     ) -> bytes:
-        """entries: list[(avatar_url, nickname, total_xp, progress_ratio)].Trả về bytes PNG."""
-        font_title = _load_font(46, "bold")
-        font_sub = _load_font(22)
-        font_rank_big = _load_font(40, "bold")
-        font_name = _load_font(26, "bold")
-        font_medal = _load_font(34, "bold")
-        font_xp = _load_font(20)
-        font_pos = _load_font(20)
+        """entries: [(avatar_url, name, total_xp, progress_ratio)]. Trả về bytes PNG."""
+        font_title = _load_font(38, "bold")
+        font_sub = _load_font(18)
+        font_rank = _load_font(32, "bold")
+        font_name = _load_font(22, "bold")
+        font_xp = _load_font(18)
+        font_level = _load_font(14)
+        font_medal_num = _load_font(20, "bold")
 
         n = len(entries)
-        width = 1100
-        header = 170
-        height = header + n * ROW_H + PAD
+        width = 620
+        header_h = 120
+        height = header_h + n * ROW_H + PAD_Y * 2
 
-        # Gradient nền
-        img = Image.new("RGB", (width, height), BG_TOP)
-        draw = ImageDraw.Draw(img)
-        for y in range(height):
-            t = y / height
-            r = int(round(BG_TOP[0] + (BG_BOTTOM[0] - BG_TOP[0]) * t))
-            g = int(round(BG_TOP[1] + (BG_BOTTOM[1] - BG_TOP[1]) * t))
-            b = int(round(BG_TOP[2] + (BG_BOTTOM[2] - BG_TOP[2]) * t))
-            draw.line((0, y, width, y), fill=(r, g, b))
-        overlay = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-        odraw = ImageDraw.Draw(overlay)
-        odraw.rounded_rectangle((0, 0, width, height), radius=28, fill=(0, 0, 0, 60))
-        img = Image.alpha_composite(img.convert("RGBA"), overlay)
-
+        # ── Nền ──
+        img = Image.new("RGBA", (width, height), BG_DARK)
         draw = ImageDraw.Draw(img)
 
-        # Tiêu đề
-        draw.text((PAD, 34), title, font=font_title, fill=TEXT_MAIN)
-        draw.text((PAD, 98), f"Tổng cộng {n} thành viên · Cập nhật mỗi tin nhắn",
-                  font=font_sub, fill=TEXT_DIM)
+        # ── Header ──
+        draw.text((PAD_X + 4, 28), title, font=font_title, fill=TEXT_WHITE)
+        draw.text(
+            (PAD_X + 4, 76),
+            f"{n} thành viên",
+            font=font_sub,
+            fill=TEXT_GRAY,
+        )
 
+        # ── Divider ──
+        draw.line(
+            (PAD_X, header_h - 8, width - PAD_X, header_h - 8),
+            fill=DIVIDER,
+            width=1,
+        )
+
+        # ── Tải avatar ──
         async with aiohttp.ClientSession() as session:
             avatars = await asyncio.gather(
                 *[_fetch_avatar(session, url) for url, _, _, _ in entries]
             )
 
-            for i, ((url, name, total_xp, ratio), avatar_raw) in enumerate(zip(entries, avatars)):
-                y = header + i * ROW_H
-                top3 = i < top
-                row_top = i + 1
+        # ── Vẽ mỗi hàng ──
+        medal_border = {1: BORDER_TOP1, 2: BORDER_TOP2, 3: BORDER_TOP3}
+        medal_bar = {1: BAR_FILL_TOP1, 2: BAR_FILL_TOP2, 3: BAR_FILL_TOP3}
 
-                # Card nền
-                if top3:
-                    medal_color = MEDAL[row_top]
-                    draw.rounded_rectangle(
-                        (PAD, y + 8, width - PAD, y + ROW_H + 8),
-                        radius=18, fill=(*medal_color, 36), outline=(*medal_color, 255), width=3,
-                    )
-                else:
-                    draw.rounded_rectangle(
-                        (PAD, y + 8, width - PAD, y + ROW_H + 8),
-                        radius=18, fill=CARD_BG, width=0,
-                    )
+        for i, ((url, name, total_xp, ratio), avatar_raw) in enumerate(zip(entries, avatars)):
+            y = header_h + PAD_Y + i * ROW_H
+            rank_num = i + 1
+            is_top3 = rank_num <= top
 
-                # Avatar
-                av_size = 64
-                av = _rounded_avatar(avatar_raw, av_size, av_size // 2)
-                img.paste(av, (PAD + 18, y + 8 + (ROW_H - av_size) // 2), av)
-                av_center_x = PAD + 18 + av_size // 2
+            # ── Card nền ──
+            card_fill = BG_CARD_TOP3 if is_top3 else BG_CARD
+            card_outline = medal_border.get(rank_num) if is_top3 else None
+            _draw_rounded_rect(
+                draw,
+                (PAD_X, y, width - PAD_X, y + ROW_H - 6),
+                radius=CARD_RADIUS,
+                fill=card_fill,
+                outline=card_outline,
+                width=2 if is_top3 else 0,
+            )
 
-                # Thứ hạng
-                rank_x = av_center_x + 46
-                if top3:
-                    draw.text((rank_x + 12, y + 30), str(row_top), font=font_rank_big,
-                              fill=medal_color)
-                else:
-                    draw.text((rank_x + 14, y + 30), str(row_top), font=font_rank_big,
-                              fill=TEXT_DIM)
+            inner_x = PAD_X + 16
+            row_center_y = y + (ROW_H - 6) // 2
 
-                # Tên + XP
-                name_x = rank_x + 58
-                draw.text((name_x, y + 26), _truncate(name, 26), font=font_name, fill=TEXT_MAIN)
-                draw.text((name_x, y + 58), f"{total_xp:,} XP", font=font_xp, fill=TEXT_DIM)
+            # ── Rank number ──
+            rank_text = str(rank_num)
+            if is_top3:
+                rank_color = medal_border[rank_num]
+            else:
+                rank_color = TEXT_GRAY
+            rank_bbox = draw.textbbox((0, 0), rank_text, font=font_rank)
+            rank_w = rank_bbox[2] - rank_bbox[0]
+            rank_h = rank_bbox[3] - rank_bbox[1]
+            rank_x = inner_x
+            rank_y = row_center_y - rank_h // 2 - 4
+            draw.text((rank_x, rank_y), rank_text, font=font_rank, fill=rank_color)
 
-                # Thanh XP bên phải
-                bar_w = 300
-                bar_h = 14
-                bar_x = width - PAD - bar_w - 24
-                bar_y = y + (ROW_H - bar_h) // 2 + 16
-                draw.rounded_rectangle((bar_x, bar_y, bar_x + bar_w, bar_y + bar_h),
-                                       radius=bar_h // 2, fill=BAR_BG)
-                # XP hiện tại trong level (tỉ lệ thật truyền vào)
-                fill_w = int(bar_w * max(0.0, min(ratio, 1.0)))
-                if fill_w > bar_h:
-                    draw.rounded_rectangle((bar_x, bar_y, bar_x + fill_w, bar_y + bar_h),
-                                           radius=bar_h // 2, fill=BAR_FILL_A)
-                # Top 3 huy chương (vòng tròn màu vàng/bạc/đồng)
-                if top3:
-                    mc = bar_x + bar_w + 16
-                    mcy = bar_y + bar_h // 2
-                    mr = 15
-                    draw.ellipse((mc - mr, mcy - mr, mc + mr, mcy + mr), fill=medal_color)
-                    # số thứ hạng trong huy chương
-                    t = str(row_top)
-                    bbox = draw.textbbox((0, 0), t, font=font_medal)
-                    tw = bbox[2] - bbox[0]
-                    th = bbox[3] - bbox[1]
-                    draw.text((mc - tw / 2, mcy - th / 2), t, font=font_medal, fill=(31, 38, 74))
+            # ── Avatar ──
+            av_size = 56
+            av_x = inner_x + 50
+            av_y = row_center_y - av_size // 2 - 4
+            av = _rounded_avatar(avatar_raw, av_size)
 
+            # Vòng tròn viền avatar cho top 3
+            if is_top3:
+                border_color = medal_border[rank_num]
+                border_r = av_size // 2 + 3
+                border_cx = av_x + av_size // 2
+                border_cy = av_y + av_size // 2
+                draw.ellipse(
+                    (border_cx - border_r, border_cy - border_r,
+                     border_cx + border_r, border_cy + border_r),
+                    fill=border_color,
+                )
+
+            img.paste(av, (av_x, av_y), av)
+
+            # ── Tên ──
+            name_x = av_x + av_size + 16
+            name_trunc = _truncate(name, 20)
+            draw.text((name_x, row_center_y - 22), name_trunc, font=font_name, fill=TEXT_WHITE)
+
+            # ── XP ──
+            xp_text = f"{total_xp:,} XP"
+            draw.text((name_x, row_center_y + 6), xp_text, font=font_xp, fill=TEXT_XP)
+
+            # ── Thanh XP ──
+            bar_w = 140
+            bar_h = 10
+            bar_x = width - PAD_X - 16 - bar_w
+            bar_y = row_center_y - bar_h // 2 + 8
+
+            _draw_rounded_rect(
+                draw,
+                (bar_x, bar_y, bar_x + bar_w, bar_y + bar_h),
+                radius=bar_h // 2,
+                fill=BAR_BG,
+            )
+
+            fill_w = int(bar_w * max(0.0, min(ratio, 1.0)))
+            if fill_w > 2:
+                bar_color = medal_bar.get(rank_num, BAR_FILL)
+                _draw_rounded_rect(
+                    draw,
+                    (bar_x, bar_y, bar_x + fill_w, bar_y + bar_h),
+                    radius=bar_h // 2,
+                    fill=bar_color,
+                )
+
+        # ── Xuất PNG ──
         buf = io.BytesIO()
         img.convert("RGB").save(buf, format="PNG")
         buf.seek(0)
         return buf.getvalue()
-
-
-def _truncate(text: str, max_len: int) -> str:
-    """Cắt dài tên, thêm '…' nếu vượt giới hạn."""
-    if len(text) <= max_len:
-        return text
-    return text[: max_len - 1] + "…"
