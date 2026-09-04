@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
+from typing import Any
 
 import discord
 from discord import app_commands
@@ -62,6 +63,7 @@ class CodiBot(commands.Bot):
         self.db = None
         self.start_time = datetime.now(timezone.utc)
         self.owner_ids: set[int] = set()
+        self.leaderboard_updater: Any = None
 
     # ------------------------------------------------------------------
     # Prefix

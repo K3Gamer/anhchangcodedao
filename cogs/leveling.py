@@ -34,7 +34,12 @@ class Leveling(commands.Cog):
         if self.service is None:
             return
         try:
-            await self.service.grant_xp(message.guild.id, message.author.id)
+            result = await self.service.grant_xp(message.guild.id, message.author.id)
+            # Thông báo updater nếu XP thực sự thay đổi
+            if result is not None:
+                updater = getattr(self.bot, "leaderboard_updater", None)
+                if updater:
+                    await updater.notify_xp_change(message.guild.id)
         except Exception:
             logger.exception("Lỗi khi cộng XP cho %s", message.author.id)
 
@@ -87,13 +92,10 @@ class Leveling(commands.Cog):
     @app_commands.command(
         name="leaderboard", description="Xem bảng xếp hạng XP hình ảnh của server"
     )
-    @app_commands.describe(limit="Số lượng thành viên hiển thị (mặc định 10, tối đa 15)")
-    async def leaderboard(
-        self, interaction: discord.Interaction, limit: app_commands.Range[int, 5, 15] = 10
-    ) -> None:
+    async def leaderboard(self, interaction: discord.Interaction) -> None:
         await interaction.response.defer()
 
-        top_docs = await self.service.get_top(interaction.guild_id, limit=limit)
+        top_docs = await self.service.get_top(interaction.guild_id, limit=10)
         if not top_docs:
             embed = self.bot.embeds.info(
                 "Chưa có dữ liệu XP nào. Hãy hoạt động để bắt đầu tích lũy XP!"
@@ -103,22 +105,26 @@ class Leveling(commands.Cog):
 
         entries: list[tuple[str, str, int]] = []
         for doc in top_docs:
+            if doc.get("total_xp", 0) <= 0:
+                continue
             user = self.bot.get_user(doc.get("user_id", 0))
             if user:
                 avatar = user.display_avatar.url
-                name = user.display_name if isinstance(user, discord.Member) else user.name
-            elif interaction.guild and interaction.guild.icon:
-                avatar = interaction.guild.icon.url
-                name = "Thành viên ẩn"
+                if isinstance(user, discord.Member):
+                    name = user.display_name
+                else:
+                    name = user.display_name if hasattr(user, "display_name") else user.name
             else:
                 avatar = ""
                 name = "Thành viên ẩn"
             entries.append((avatar, name, doc.get("total_xp", 0)))
 
-        if len(entries) < limit and interaction.guild:
-            icon = interaction.guild.icon.url if interaction.guild.icon else ""
-            while len(entries) < limit:
-                entries.append((icon, "—", 0))
+        if not entries:
+            embed = self.bot.embeds.info(
+                "Chưa có thành viên nào có XP. Hãy hoạt động để bắt đầu tích lũy XP!"
+            )
+            await interaction.followup.send(embed=embed)
+            return
 
         try:
             image = await self.service.build_leaderboard_image(

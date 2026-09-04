@@ -46,6 +46,32 @@ class Settings(commands.Cog):
         embed = self.bot.embeds.success(f"Kênh log sự kiện: {channel.mention}.")
         await interaction.response.send_message(embed=embed)
 
+    @app_commands.command(
+        name="setleaderboardchannel",
+        description="Chọn kênh hiển thị bảng xếp hạng XP tự động",
+    )
+    @app_commands.default_permissions(administrator=True)
+    @is_admin()
+    async def setleaderboardchannel(
+        self, interaction: discord.Interaction, channel: discord.TextChannel
+    ) -> None:
+        await self.bot.config_manager.update(
+            interaction.guild.id,
+            {
+                "leaderboard.channel_id": channel.id,
+                "leaderboard.message_id": None,
+            },
+        )
+        embed = self.bot.embeds.success(
+            f"Kênh leaderboard đã đặt: {channel.mention}.\n"
+            "Bảng xếp hạng sẽ tự động hiển thị dưới dạng ảnh khi có thay đổi XP."
+        )
+        await interaction.response.send_message(embed=embed)
+
+        updater = getattr(self.bot, "leaderboard_updater", None)
+        if updater:
+            await updater.force_update(interaction.guild.id)
+
     @app_commands.command(name="settings", description="Xem cấu hình hiện tại của server")
     @app_commands.default_permissions(administrator=True)
     @is_admin()
@@ -60,6 +86,14 @@ class Settings(commands.Cog):
         embed.add_field(name="📜 Log quản trị", value=f"<#{mod_log}>" if mod_log else "Chưa đặt")
         logging_ch = config.get("logging_channel")
         embed.add_field(name="📜 Log sự kiện", value=f"<#{logging_ch}>" if logging_ch else "Chưa đặt")
+
+        lb_cfg = config.get("leaderboard", {})
+        lb_channel = lb_cfg.get("channel_id")
+        embed.add_field(
+            name="🏆 Leaderboard",
+            value=f"Kênh: {f'<#{lb_channel}>' if lb_channel else 'Chưa đặt'}",
+            inline=False,
+        )
 
         automod = config.get("automod", {})
         enabled_features = [

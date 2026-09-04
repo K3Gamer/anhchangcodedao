@@ -12,6 +12,7 @@ from core.logging import setup_logging
 from database.guild_config import GuildConfigManager
 from services.leveling import LevelingService
 from utils.crash_log import install as install_crash_log, log_fatal_to_file
+from utils.leaderboard_updater import LeaderboardUpdater
 
 logger = logging.getLogger("codi")
 
@@ -36,6 +37,10 @@ async def main() -> None:
     bot.db = Database.get_db()
     bot.config_manager = GuildConfigManager(bot.db)
     bot.leveling_service = LevelingService(bot.db)
+
+    updater = LeaderboardUpdater(bot)
+    bot.leaderboard_updater = updater
+    updater.start()
 
     try:
         await bot.start(cfg.token, reconnect=True)

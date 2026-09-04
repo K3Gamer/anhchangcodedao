@@ -59,6 +59,10 @@ DEFAULT_GUILD_CONFIG: dict[str, Any] = {
         "panel_channel_id": None,
         "panel_message_id": None,
     },
+    "leaderboard": {
+        "channel_id": None,
+        "message_id": None,
+    },
     "automod": DEFAULT_AUTOMOD,
     "antinuke": DEFAULT_ANTINUKE,
 }
