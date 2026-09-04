@@ -122,3 +122,44 @@ class LevelingService:
 
     async def reset_user(self, guild_id: int, user_id: int) -> bool:
         return await self.repository.reset_user(guild_id, user_id)
+
+    # ---------------------------------------------------------------
+    # Thao tác XP thủ công (admin)
+    # ---------------------------------------------------------------
+    async def add_xp(self, guild_id: int, user_id: int, amount: int) -> dict[str, Any]:
+        """Cộng XP thủ công. Trả về doc sau khi cập nhật."""
+        doc = await self.repository.get(guild_id, user_id)
+        current_xp = int(doc.get("total_xp", 0)) if doc else 0
+        new_xp = max(0, current_xp + amount)
+        new_doc: dict[str, Any] = {
+            "guild_id": guild_id,
+            "user_id": user_id,
+            "total_xp": new_xp,
+        }
+        if doc is None:
+            new_doc["last_message"] = datetime.now(timezone.utc)
+        await self.repository.upsert(new_doc)
+        new_doc["level"] = self.level_from_xp(new_xp)
+        new_doc["old_level"] = self.level_from_xp(current_xp)
+        return new_doc
+
+    async def remove_xp(self, guild_id: int, user_id: int, amount: int) -> dict[str, Any]:
+        """Trừ XP thủ công. Trả về doc sau khi cập nhật."""
+        return await self.add_xp(guild_id, user_id, -amount)
+
+    async def set_xp(self, guild_id: int, user_id: int, amount: int) -> dict[str, Any]:
+        """Đặt XP thủ công. Trả về doc sau khi cập nhật."""
+        amount = max(0, amount)
+        doc = await self.repository.get(guild_id, user_id)
+        current_xp = int(doc.get("total_xp", 0)) if doc else 0
+        new_doc: dict[str, Any] = {
+            "guild_id": guild_id,
+            "user_id": user_id,
+            "total_xp": amount,
+        }
+        if doc is None:
+            new_doc["last_message"] = datetime.now(timezone.utc)
+        await self.repository.upsert(new_doc)
+        new_doc["level"] = self.level_from_xp(amount)
+        new_doc["old_level"] = self.level_from_xp(current_xp)
+        return new_doc

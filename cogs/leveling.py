@@ -143,6 +143,81 @@ class Leveling(commands.Cog):
         await interaction.followup.send(embed=embed, file=file)
 
     # ================================================================
+    # /xp add — cộng XP thủ công
+    # ================================================================
+    @app_commands.command(
+        name="xp-add", description="[Quản trị] Cộng XP cho thành viên"
+    )
+    @app_commands.describe(member="Thành viên cần cộng XP", amount="Số XP cần cộng")
+    @is_admin()
+    async def xp_add(
+        self, interaction: discord.Interaction, member: discord.Member, amount: app_commands.Range[int, 1, 100000]
+    ) -> None:
+        if member.bot:
+            embed = self.bot.embeds.error("Bot không có XP.")
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+        doc = await self.service.add_xp(interaction.guild_id, member.id, amount)
+        level = doc["level"]
+        total = doc["total_xp"]
+        embed = self.bot.embeds.success(
+            f"Đã cộng **{amount:,} XP** cho {member.mention}\n"
+            f"Tổng XP: **{total:,}** · Cấp độ: **{level}**"
+        )
+        await interaction.response.send_message(embed=embed)
+        await self._notify_leaderboard(interaction.guild_id)
+
+    # ================================================================
+    # /xp remove — trừ XP thủ công
+    # ================================================================
+    @app_commands.command(
+        name="xp-remove", description="[Quản trị] Trừ XP của thành viên"
+    )
+    @app_commands.describe(member="Thành viên cần trừ XP", amount="Số XP cần trừ")
+    @is_admin()
+    async def xp_remove(
+        self, interaction: discord.Interaction, member: discord.Member, amount: app_commands.Range[int, 1, 100000]
+    ) -> None:
+        if member.bot:
+            embed = self.bot.embeds.error("Bot không có XP.")
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+        doc = await self.service.remove_xp(interaction.guild_id, member.id, amount)
+        level = doc["level"]
+        total = doc["total_xp"]
+        embed = self.bot.embeds.success(
+            f"Đã trừ **{amount:,} XP** của {member.mention}\n"
+            f"Tổng XP: **{total:,}** · Cấp độ: **{level}**"
+        )
+        await interaction.response.send_message(embed=embed)
+        await self._notify_leaderboard(interaction.guild_id)
+
+    # ================================================================
+    # /xp set — đặt XP thủ công
+    # ================================================================
+    @app_commands.command(
+        name="xp-set", description="[Quản trị] Đặt XP cho thành viên"
+    )
+    @app_commands.describe(member="Thành viên cần đặt XP", amount="Tổng XP cần đặt")
+    @is_admin()
+    async def xp_set(
+        self, interaction: discord.Interaction, member: discord.Member, amount: app_commands.Range[int, 0, 1000000]
+    ) -> None:
+        if member.bot:
+            embed = self.bot.embeds.error("Bot không có XP.")
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+        doc = await self.service.set_xp(interaction.guild_id, member.id, amount)
+        level = doc["level"]
+        total = doc["total_xp"]
+        embed = self.bot.embeds.success(
+            f"Đã đặt XP của {member.mention} thành **{total:,} XP**\n"
+            f"Cấp độ: **{level}**"
+        )
+        await interaction.response.send_message(embed=embed)
+        await self._notify_leaderboard(interaction.guild_id)
+
+    # ================================================================
     # /rank reset — xóa dữ liệu XP (quản trị)
     # ================================================================
     @app_commands.command(
@@ -156,6 +231,14 @@ class Leveling(commands.Cog):
             f"Đã xóa dữ liệu XP của **{count}** thành viên trong server."
         )
         await interaction.followup.send(embed=embed, ephemeral=True)
+
+    # ================================================================
+    # Hỗ trợ — thông báo updater leaderboard
+    # ================================================================
+    async def _notify_leaderboard(self, guild_id: int) -> None:
+        updater = getattr(self.bot, "leaderboard_updater", None)
+        if updater:
+            await updater.force_update(guild_id)
 
     # ================================================================
     # Hỗ trợ — thẻ rank dạng ảnh riêng
