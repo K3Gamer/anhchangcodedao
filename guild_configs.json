@@ -1,0 +1,186 @@
+[
+  {
+    "_id": 1451217022523277503,
+    "prefix": "!",
+    "mod_log_channel": null,
+    "logging_channel": null,
+    "logging": {
+      "enabled": true,
+      "events": {}
+    },
+    "ticket": {
+      "category_id": null,
+      "staff_role_id": null,
+      "transcript_channel_id": null,
+      "panel_channel_id": null,
+      "panel_message_id": null
+    },
+    "automod": {
+      "enabled": true,
+      "anti_spam": {
+        "enabled": true,
+        "max_messages": 6,
+        "interval": 8,
+        "action": "delete"
+      },
+      "anti_mention": {
+        "enabled": true,
+        "max_mentions": 6,
+        "action": "delete"
+      },
+      "anti_link": {
+        "enabled": true,
+        "action": "delete"
+      },
+      "anti_invite": {
+        "enabled": true,
+        "action": "delete"
+      },
+      "anti_scam": {
+        "enabled": true,
+        "action": "delete"
+      },
+      "anti_emoji": {
+        "enabled": true,
+        "max_emojis": 15,
+        "action": "delete"
+      },
+      "anti_caps": {
+        "enabled": true,
+        "max_percent": 0.7,
+        "min_chars": 8,
+        "action": "delete"
+      },
+      "anti_badwords": {
+        "enabled": true,
+        "action": "delete"
+      },
+      "anti_flood": {
+        "enabled": true,
+        "max_duplicates": 4,
+        "interval": 20,
+        "action": "delete"
+      },
+      "auto_slowmode": {
+        "enabled": false,
+        "threshold": 8,
+        "window": 10,
+        "slowmode_seconds": 10
+      },
+      "whitelisted_channels": [],
+      "whitelisted_users": [],
+      "whitelisted_roles": []
+    },
+    "antinuke": {
+      "enabled": true,
+      "window": 10,
+      "action": "ban",
+      "max_bans": 5,
+      "max_kicks": 5,
+      "max_channel_delete": 3,
+      "max_channel_create": 3,
+      "max_role_delete": 3,
+      "max_role_create": 3,
+      "max_emoji_delete": 3,
+      "max_sticker_delete": 3,
+      "max_webhook_delete": 3,
+      "max_permission_edit": 8,
+      "whitelisted_users": [],
+      "whitelisted_roles": []
+    },
+    "leaderboard": {
+      "channel_id": 1518471830074294302,
+      "message_id": 1545611624168169503
+    }
+  },
+  {
+    "_id": 1533689253081649182,
+    "prefix": "!",
+    "mod_log_channel": null,
+    "logging_channel": null,
+    "logging": {
+      "enabled": true,
+      "events": {}
+    },
+    "ticket": {
+      "category_id": 1544902205717348392,
+      "staff_role_id": null,
+      "transcript_channel_id": null,
+      "panel_channel_id": null,
+      "panel_message_id": null
+    },
+    "automod": {
+      "enabled": true,
+      "anti_spam": {
+        "enabled": true,
+        "max_messages": 6,
+        "interval": 8,
+        "action": "delete"
+      },
+      "anti_mention": {
+        "enabled": true,
+        "max_mentions": 6,
+        "action": "delete"
+      },
+      "anti_link": {
+        "enabled": true,
+        "action": "delete"
+      },
+      "anti_invite": {
+        "enabled": true,
+        "action": "delete"
+      },
+      "anti_scam": {
+        "enabled": true,
+        "action": "delete"
+      },
+      "anti_emoji": {
+        "enabled": true,
+        "max_emojis": 15,
+        "action": "delete"
+      },
+      "anti_caps": {
+        "enabled": true,
+        "max_percent": 0.7,
+        "min_chars": 8,
+        "action": "delete"
+      },
+      "anti_badwords": {
+        "enabled": true,
+        "action": "delete"
+      },
+      "anti_flood": {
+        "enabled": true,
+        "max_duplicates": 4,
+        "interval": 20,
+        "action": "delete"
+      },
+      "auto_slowmode": {
+        "enabled": false,
+        "threshold": 8,
+        "window": 10,
+        "slowmode_seconds": 10
+      },
+      "whitelisted_channels": [],
+      "whitelisted_users": [],
+      "whitelisted_roles": []
+    },
+    "antinuke": {
+      "enabled": true,
+      "window": 10,
+      "action": "ban",
+      "max_bans": 5,
+      "max_kicks": 5,
+      "max_channel_delete": 3,
+      "max_channel_create": 3,
+      "max_role_delete": 3,
+      "max_role_create": 3,
+      "max_emoji_delete": 3,
+      "max_sticker_delete": 3,
+      "max_webhook_delete": 3,
+      "max_permission_edit": 8,
+      "whitelisted_users": [],
+      "whitelisted_roles": []
+    }
+  }
+]
