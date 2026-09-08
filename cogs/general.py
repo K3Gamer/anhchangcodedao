@@ -296,10 +296,9 @@ class General(commands.Cog):
 
         description = "\n".join(f"**{mon}**: {bai}" for mon, bai in items)
         embed = self.bot.embeds.base(
-            title="📝 Báo bài tập",
+            title=f"📝 Báo Bài Tập - ({ngay})",
             description=description,
         )
-        embed.add_field(name="📅 Ngày", value=f"**{ngay}**", inline=True)
         if ctx.guild and ctx.guild.icon:
             embed.set_footer(text="Bới Cái Đào", icon_url=ctx.guild.icon.url)
         await ctx.send(embed=embed)
