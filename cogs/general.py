@@ -47,8 +47,8 @@ HELP_CATEGORIES: CategoryMap = {
             ("/embed", "Tạo embed tùy chỉnh"),
             ("/remind", "Đặt lời nhắc riêng"),
             ("!chat", "Echo tin nhắn / file"),
-            ("!baobai", "Báo bài: !baobai 3 Toán:bài 1; Lý:bài 2; Hóa:bài 3"),
-            ("!baobaitap", "Báo bài tập kèm ngày: !baobaitap 08/09 3 Toán:bài 1; Lý:bài 2"),
+            ("!baobai", "Báo bài: !baobai Toán:bài 1; Lý:bài 2"),
+            ("!baobaitap", "Báo bài tập: !baobaitap 08/09 Toán:bài 1; Lý:bài 2"),
         ],
     ),
     "Leveling": (
@@ -240,81 +240,68 @@ class General(commands.Cog):
 
     @commands.command(name="baobai")
     @commands.cooldown(1, 10, commands.BucketType.user)
-    async def baobai(self, ctx: commands.Context, count: int | None = None, *, raw: str | None = None) -> None:
-        """!baobai <số_lượng> <môn>:<bài>;<môn>:<bài>;...
-        VD: !baobai 3 Toán:bài 1; Lý:bài 2; Hóa:bài 3
+    async def baobai(self, ctx: commands.Context, *, raw: str | None = None) -> None:
+        """!baobai <môn>:<bài>;<môn>:<bài>;...
+        VD: !baobai Toán:bài 1; Lý:bài 2; Hóa:bài 3
         """
-        if count is None or raw is None:
+        if raw is None:
             embed = self.bot.embeds.error(
-                "Cú pháp: `!baobai <số_lượng> <môn>:<bài>;<môn>:<bài>;...`\n"
-                "VD: `!baobai 3 Toán:bài 1; Lý:bài 2; Hóa:bài 3`"
+                "Cú pháp: `!baobai <môn>:<bài>;<môn>:<bài>;...`\n"
+                "VD: `!baobai Toán:bài 1; Lý:bài 2; Hóa:bài 3`"
             )
             await ctx.send(embed=embed)
             return
 
         items = self._parse_baobai(raw)
         if not items:
-            embed = self.bot.embeds.error("Không phân tích được dữ liệu. Vui lòng dùng đúng cú pháp.\nVD: `!baobai 3 Toán:bài 1; Lý:bài 2; Hóa:bài 3`")
+            embed = self.bot.embeds.error("Không phân tích được dữ liệu. Vui lòng dùng đúng cú pháp.\nVD: `!baobai Toán:bài 1; Lý:bài 2; Hóa:bài 3`")
             await ctx.send(embed=embed)
             return
 
         description = "\n".join(f"**{mon}**: {bai}" for mon, bai in items)
         embed = self.bot.embeds.base(
-            title=f"📚 Báo bài — {ctx.author.display_name}",
+            title="📚 Báo bài",
             description=description,
         )
-        embed.add_field(name="📊 Số lượng", value=f"**{len(items)}** bài", inline=True)
+        if ctx.guild and ctx.guild.icon:
+            embed.set_footer(text="Bới Cái Đào", icon_url=ctx.guild.icon.url)
         await ctx.send(embed=embed)
 
     @commands.command(name="baobaitap")
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def baobaitap(self, ctx: commands.Context, *, raw: str | None = None) -> None:
-        """!baobaitap <ngày> <số_lượng> <môn>:<bài>;<môn>:<bài>;...
-        VD: !baobaitap 08/09/2026 3 Toán:bài 1; Lý:bài 2; Hóa:bài 3
+        """!baobaitap <ngày> <môn>:<bài>;<môn>:<bài>;...
+        VD: !baobaitap 08/09/2026 Toán:bài 1; Lý:bài 2; Hóa:bài 3
         """
         if raw is None:
             embed = self.bot.embeds.error(
-                "Cú pháp: `!baobaitap <ngày> <số_lượng> <môn>:<bài>;<môn>:<bài>;...`\n"
-                "VD: `!baobaitap 08/09/2026 3 Toán:bài 1; Lý:bài 2; Hóa:bài 3`"
+                "Cú pháp: `!baobaitap <ngày> <môn>:<bài>;<môn>:<bài>;...`\n"
+                "VD: `!baobaitap 08/09/2026 Toán:bài 1; Lý:bài 2; Hóa:bài 3`"
             )
             await ctx.send(embed=embed)
             return
 
         parts = raw.split(None, 1)
         if len(parts) < 2:
-            embed = self.bot.embeds.error("Thiếu dữ liệu bài tập. Vui lòng nhập đúng cú pháp.\nVD: `!baobaitap 08/09/2026 3 Toán:bài 1; Lý:bài 2; Hóa:bài 3`")
+            embed = self.bot.embeds.error("Thiếu dữ liệu bài tập. Vui lòng nhập đúng cú pháp.\nVD: `!baobaitap 08/09/2026 Toán:bài 1; Lý:bài 2; Hóa:bài 3`")
             await ctx.send(embed=embed)
             return
 
         ngay = parts[0].strip()
-        remaining = parts[1]
-
-        count_parts = remaining.split(None, 1)
-        if len(count_parts) < 2:
-            embed = self.bot.embeds.error("Thiếu dữ liệu bài tập. Vui lòng nhập đúng cú pháp.\nVD: `!baobaitap 08/09/2026 3 Toán:bài 1; Lý:bài 2; Hóa:bài 3`")
-            await ctx.send(embed=embed)
-            return
-
-        try:
-            count = int(count_parts[0])
-        except ValueError:
-            embed = self.bot.embeds.error("Số lượng phải là số nguyên.\nVD: `!baobaitap 08/09/2026 3 Toán:bài 1; Lý:bài 2; Hóa:bài 3`")
-            await ctx.send(embed=embed)
-            return
-
-        items = self._parse_baobai(count_parts[1])
+        items = self._parse_baobai(parts[1])
         if not items:
-            embed = self.bot.embeds.error("Không phân tích được dữ liệu. Vui lòng dùng đúng cú pháp.\nVD: `!baobaitap 08/09/2026 3 Toán:bài 1; Lý:bài 2; Hóa:bài 3`")
+            embed = self.bot.embeds.error("Không phân tích được dữ liệu. Vui lòng dùng đúng cú pháp.\nVD: `!baobaitap 08/09/2026 Toán:bài 1; Lý:bài 2; Hóa:bài 3`")
             await ctx.send(embed=embed)
             return
 
         description = "\n".join(f"**{mon}**: {bai}" for mon, bai in items)
         embed = self.bot.embeds.base(
-            title=f"📝 Báo bài tập — {ctx.author.display_name}",
+            title="📝 Báo bài tập",
             description=description,
         )
         embed.add_field(name="📅 Ngày", value=f"**{ngay}**", inline=True)
-        embed.add_field(name="📊 Số lượng", value=f"**{len(items)}** bài", inline=True)
+        if ctx.guild and ctx.guild.icon:
+            embed.set_footer(text="Bới Cái Đào", icon_url=ctx.guild.icon.url)
         await ctx.send(embed=embed)
 
     # ================================================================
