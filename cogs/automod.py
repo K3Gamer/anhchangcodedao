@@ -191,12 +191,8 @@ class AutoMod(commands.Cog):
         # Từ bậy: nhắn lại nội dung đã thay :bonk: để mọi người thấy
         if "anti_badwords" in feature_list and message.content:
             censored, _ = censor_bad_words(message.content, replacement=self._get_bonk())
-            reply = (
-                f"{member.mention} Tin nhắn của bạn đã bị xóa vì chứa từ không phù hợp.\n"
-                f"> {censored}"
-            )
             try:
-                await message.channel.send(reply)
+                await message.channel.send(censored)
             except discord.HTTPException:
                 pass
 
