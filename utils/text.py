@@ -4,6 +4,12 @@ from __future__ import annotations
 
 import html as html_module
 import re
+from collections.abc import Iterable
+
+from utils.constants import BAD_WORDS
+
+# Biểu tượng thay thế từ bậy
+BONK_ICON = ":bonk:"
 
 
 def slugify(text: str, limit: int = 24) -> str:
@@ -22,6 +28,21 @@ def truncate(text: str, limit: int = 1000) -> str:
 def escape(text: str) -> str:
     """HTML-escape chuỗi (dùng khi tạo transcript)."""
     return html_module.escape(text, quote=True)
+
+
+def censor_bad_words(text: str, bad_words: Iterable[str] = BAD_WORDS) -> tuple[str, int]:
+    """Thay mọi từ bậy trong chuỗi bằng icon :bonk:.
+
+    Trả về (nội dung đã thay thế, số từ bậy bị phát hiện).
+    So khớp không phân biệt hoa thường và ưu tiên thay từ dài trước.
+    """
+    censored = text
+    count = 0
+    for word in sorted(bad_words, key=len, reverse=True):
+        pattern = re.compile(re.escape(word), re.IGNORECASE)
+        censored, n = pattern.subn(BONK_ICON, censored)
+        count += n
+    return censored, count
 
 
 _PERMISSION_NAMES: dict[str, str] = {

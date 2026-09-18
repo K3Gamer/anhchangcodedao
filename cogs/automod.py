@@ -25,6 +25,7 @@ from utils.constants import (
     SCAM_URL_KEYWORDS,
     URL_REGEX,
 )
+from utils.text import censor_bad_words
 
 # Danh sách lựa chọn cho slash command
 _FEATURE_CHOICES = [
@@ -176,7 +177,8 @@ class AutoMod(commands.Cog):
         """Áp dụng hành động nghiêm trọng nhất và ghi log."""
         best = max(violations, key=lambda v: ACTION_SEVERITY.get(v[1], 0))
         action = best[1]
-        features = ", ".join(dict.fromkeys(v[0] for v in violations))
+        feature_list = list(dict.fromkeys(v[0] for v in violations))
+        features = ", ".join(feature_list)
         member = message.author
         guild = message.guild
         reason = f"AutoMod: {features}"
@@ -185,6 +187,18 @@ class AutoMod(commands.Cog):
             await message.delete()
         except discord.HTTPException:
             pass
+
+        # Từ bậy: nhắn lại nội dung đã thay :bonk: để mọi người thấy
+        if "anti_badwords" in feature_list and message.content:
+            censored, _ = censor_bad_words(message.content)
+            reply = (
+                f"{member.mention} Tin nhắn của bạn đã bị xóa vì chứa từ không phù hợp.\n"
+                f"> {censored}"
+            )
+            try:
+                await message.channel.send(reply)
+            except discord.HTTPException:
+                pass
 
         if action in ("warn", "timeout", "kick", "ban"):
             if action == "warn":
