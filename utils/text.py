@@ -8,7 +8,7 @@ from collections.abc import Iterable
 
 from utils.constants import BAD_WORDS
 
-# Biểu tượng thay thế từ bậy
+# Biểu tượng thay thế từ bậy (text fallback, Discord render nếu server có emoji :bonk:)
 BONK_ICON = ":bonk:"
 
 
@@ -30,8 +30,12 @@ def escape(text: str) -> str:
     return html_module.escape(text, quote=True)
 
 
-def censor_bad_words(text: str, bad_words: Iterable[str] = BAD_WORDS) -> tuple[str, int]:
-    """Thay mọi từ bậy trong chuỗi bằng icon :bonk:.
+def censor_bad_words(
+    text: str,
+    bad_words: Iterable[str] = BAD_WORDS,
+    replacement: str = BONK_ICON,
+) -> tuple[str, int]:
+    """Thay mọi từ bậy trong chuỗi bằng icon bonk.
 
     Trả về (nội dung đã thay thế, số từ bậy bị phát hiện).
     So khớp không phân biệt hoa thường và ưu tiên thay từ dài trước.
@@ -40,7 +44,7 @@ def censor_bad_words(text: str, bad_words: Iterable[str] = BAD_WORDS) -> tuple[s
     count = 0
     for word in sorted(bad_words, key=len, reverse=True):
         pattern = re.compile(re.escape(word), re.IGNORECASE)
-        censored, n = pattern.subn(BONK_ICON, censored)
+        censored, n = pattern.subn(replacement, censored)
         count += n
     return censored, count
 

@@ -25,7 +25,7 @@ from utils.constants import (
     SCAM_URL_KEYWORDS,
     URL_REGEX,
 )
-from utils.text import censor_bad_words
+from utils.text import BONK_ICON, censor_bad_words
 
 # Danh sách lựa chọn cho slash command
 _FEATURE_CHOICES = [
@@ -190,7 +190,7 @@ class AutoMod(commands.Cog):
 
         # Từ bậy: nhắn lại nội dung đã thay :bonk: để mọi người thấy
         if "anti_badwords" in feature_list and message.content:
-            censored, _ = censor_bad_words(message.content)
+            censored, _ = censor_bad_words(message.content, replacement=self._get_bonk())
             reply = (
                 f"{member.mention} Tin nhắn của bạn đã bị xóa vì chứa từ không phù hợp.\n"
                 f"> {censored}"
@@ -273,6 +273,14 @@ class AutoMod(commands.Cog):
     # ================================================================
     # Lệnh cấu hình
     # ================================================================
+    def _get_bonk(self) -> str:
+        """Tìm emoji tên 'bonk' mà bot đang chia sẻ; fallback sang text :bonk:."""
+        for guild in self.bot.guilds:
+            for emoji in guild.emojis:
+                if emoji.name.lower() == "bonk":
+                    return str(emoji)
+        return BONK_ICON
+
     automod = app_commands.Group(
         name="automod",
         description="Quản lý AutoMod (Admin)",
@@ -385,6 +393,22 @@ class AutoMod(commands.Cog):
             ),
             inline=False,
         )
+        await interaction.response.send_message(embed=embed)
+
+    @automod.command(name="test", description="Thử lọc từ bậy: xem kết quả sau khi thay :bonk:")
+    @is_admin()
+    @app_commands.describe(text="Nội dung cần kiểm tra")
+    async def automod_test(self, interaction: discord.Interaction, text: str) -> None:
+        censored, count = censor_bad_words(text, replacement=self._get_bonk())
+        embed = self.bot.embeds.base(title="🧪 Thử lọc từ bậy")
+        if count:
+            embed.description = "Phát hiện từ bậy — tin nhắn sẽ bị xóa và nhắn lại như sau:"
+        else:
+            embed.description = "Không phát hiện từ bậy."
+            embed.color = discord.Color.from_rgb(87, 242, 135)
+        embed.add_field(name="Nội dung gốc", value=text[:1024], inline=False)
+        embed.add_field(name="Kết quả lọc", value=censored[:1024], inline=False)
+        embed.add_field(name="Từ bậy", value=str(count), inline=True)
         await interaction.response.send_message(embed=embed)
 
 
