@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime, timezone
 from typing import Any
 
@@ -19,6 +20,9 @@ API_URL = "https://codeforces.com/api/contest.list"
 USER_AGENT = "CodiBot/1.0 (Discord notification)"
 FETCH_TIMEOUT = 15
 MAX_UPCOMING = 20
+
+# Logo Codeforces (dùng làm thumbnail trong embed)
+CF_LOGO_URL = "https://codeforces.com/codeforces.org/s/49829/images/codeforces-telegram-square-1024x1024.png"
 
 
 class CodeforcesService:
@@ -159,6 +163,50 @@ class CodeforcesService:
         embed.add_field(name="📅 Thời lượng", value=format_duration(contest.get("durationSeconds", 0)))
         embed.add_field(name="🏆 Loại", value=str(contest.get("type") or "CF"))
         embed.add_field(name="🔗 Đăng ký", value=f"[Nhấn để đăng ký]({link})", inline=False)
+        return embed
+
+    async def get_next(self) -> dict[str, Any] | None:
+        """Kỳ thi gần nhất sắp diễn ra (None nếu không có)."""
+        competitions = await self.fetch_upcoming()
+        return competitions[0] if competitions else None
+
+    @staticmethod
+    def parse_rules(name: str) -> str:
+        """Tách 'Round X • Div. Y' từ tên kỳ thi (vd 'Codeforces Round 1122 (Div. 3)')."""
+        if not name:
+            return "Codeforces Round"
+        lower = name.lower()
+        if "educational" in lower:
+            label = "Educational Round"
+        elif "global" in lower:
+            label = "Global Round"
+        else:
+            label = "Codeforces Round"
+
+        round_match = re.search(r"round\s*#?\s*(\d+)", lower)
+        round_no = round_match.group(1) if round_match else ""
+
+        divs = sorted(set(re.findall(r"div\.?\s*(\d)", lower)))
+        div_text = f" • Div. {' & '.join(divs)}" if divs else ""
+
+        return f"{label} {round_no}{div_text}".strip()
+
+    def build_fcontest_embed(self, contest: dict[str, Any]) -> discord.Embed:
+        """Embed `/cf fcontest`: logo Codeforces + giờ thi + còn bao nhiêu + nút tham gia."""
+        start = datetime.fromtimestamp(contest["startTimeSeconds"], tz=timezone.utc)
+        rules = self.parse_rules(contest.get("name", ""))
+        link = f"https://codeforces.com/contestRegistration/{contest['id']}"
+
+        embed = self.bot.embeds.base(
+            title=f"🏆 {rules}",
+            description=contest.get("name"),
+        )
+        embed.set_thumbnail(url=CF_LOGO_URL)
+        embed.add_field(name="🕒 Thời gian bắt đầu", value=discord.utils.format_dt(start, "F"))
+        embed.add_field(name="⏳ Còn lại", value=discord.utils.format_dt(start, "R"))
+        embed.add_field(name="📅 Thời lượng", value=format_duration(contest.get("durationSeconds", 0)))
+        embed.add_field(name="🏆 Loại", value=str(contest.get("type") or "CF"))
+        embed.add_field(name="🔗 Đăng ký", value=f"[Codeforces Round {contest['id']}]({link})", inline=False)
         return embed
 
     async def build_upcoming_embed(self) -> tuple[discord.Embed | None, list[dict[str, Any]]]:

@@ -129,6 +129,7 @@ HELP_CATEGORIES: CategoryMap = {
         [
             ("/cf setup", "Bật thông báo & chọn kênh (Admin)"),
             ("/cf off", "Tắt thông báo (Admin)"),
+            ("/cf fcontest", "Đăng kỳ thi CF gần nhất vào kênh CF (Admin)"),
             ("/cf settings", "Xem cấu hình thông báo"),
             ("/cf contests", "Xem kỳ thi sắp diễn ra"),
         ],

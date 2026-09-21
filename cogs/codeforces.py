@@ -90,6 +90,55 @@ class Codeforces(commands.Cog):
         )
         await interaction.response.send_message(embed=embed)
 
+    @cf.command(name="fcontest", description="Gửi thông báo kỳ thi CF gần nhất vào kênh CF")
+    @app_commands.default_permissions(administrator=True)
+    @app_commands.describe(
+        channel="Kênh nhận thông báo (mặc định: kênh đã cấu hình / kênh có tên CF)",
+        ping="Ping @everyone khi gửi (tùy chọn)",
+    )
+    @is_admin()
+    async def cf_fcontest(
+        self,
+        interaction: discord.Interaction,
+        channel: discord.TextChannel | None = None,
+        ping: bool = False,
+    ) -> None:
+        contest = await self.service.get_next()
+        if contest is None:
+            raise BotError("Hiện không có kỳ thi Codeforces nào sắp diễn ra.")
+
+        target = channel or await self._resolve_cf_channel(interaction)
+        if target is None:
+            raise BotError("Chưa có kênh CF. Hãy chỉ định kênh (vd: `/cf fcontest #codeforces`) hoặc chạy `/cf setup` trước.")
+
+        embed = self.service.build_fcontest_embed(contest)
+        view = discord.ui.View(timeout=None)
+        view.add_item(
+            discord.ui.Button(
+                style=discord.ButtonStyle.link,
+                label="🎮 Tham gia",
+                url=f"https://codeforces.com/contestRegistration/{contest['id']}",
+            )
+        )
+        await target.send(content="@everyone" if ping else None, embed=embed, view=view)
+        embed = self.bot.embeds.success(f"Đã gửi thông báo kỳ thi đến {target.mention}.")
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    async def _resolve_cf_channel(
+        self, interaction: discord.Interaction
+    ) -> discord.TextChannel | None:
+        """Chọn kênh CF: ưu tiên kênh đã cấu hình, rồi kênh có tên chứa 'cf'/'codeforces'."""
+        doc = await self.repo.get(interaction.guild.id)
+        channel_id = doc.get("channel_id")
+        if channel_id:
+            ch = interaction.guild.get_channel(channel_id)
+            if isinstance(ch, discord.TextChannel):
+                return ch
+        for ch in interaction.guild.text_channels:
+            if "cf" in ch.name.lower() or "codeforces" in ch.name.lower():
+                return ch
+        return None
+
     @cf.command(name="off", description="Tắt thông báo kỳ thi Codeforces cho server")
     @app_commands.default_permissions(administrator=True)
     @is_admin()
