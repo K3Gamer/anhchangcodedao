@@ -31,6 +31,7 @@ COGS: tuple[str, ...] = (
     "cogs.logging",
     "cogs.settings",
     "cogs.leveling",
+    "cogs.codeforces",
     "cogs.owner",
 )
 

@@ -123,6 +123,16 @@ HELP_CATEGORIES: CategoryMap = {
             ("/settings", "Xem cấu hình server"),
         ],
     ),
+    "Codeforces": (
+        "💻",
+        "Theo dõi kỳ thi Codeforces.",
+        [
+            ("/cf setup", "Bật thông báo & chọn kênh (Admin)"),
+            ("/cf off", "Tắt thông báo (Admin)"),
+            ("/cf settings", "Xem cấu hình thông báo"),
+            ("/cf contests", "Xem kỳ thi sắp diễn ra"),
+        ],
+    ),
 }
 
 
