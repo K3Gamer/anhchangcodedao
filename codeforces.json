@@ -1,0 +1,22 @@
+[
+  {
+    "_id": 1533689253081649182,
+    "enabled": true,
+    "channel_id": 1551456027004637216,
+    "ping_role_id": 1533689253081649182,
+    "notified": {
+      "2271": {
+        "announced": true
+      },
+      "2273": {
+        "announced": true
+      },
+      "2274": {
+        "announced": true
+      },
+      "2261": {
+        "announced": true
+      }
+    }
+  }
+]
