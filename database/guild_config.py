@@ -66,6 +66,10 @@ DEFAULT_GUILD_CONFIG: dict[str, Any] = {
         "channel_id": None,
         "message_id": None,
     },
+    "leveling": {
+        # Rỗng = mọi kênh đều cộng XP. Có id = chỉ những kênh đó mới cộng.
+        "xp_channel_ids": [],
+    },
     "automod": DEFAULT_AUTOMOD,
     "antinuke": DEFAULT_ANTINUKE,
 }

@@ -60,8 +60,10 @@ HELP_CATEGORIES: CategoryMap = {
             ("/xp-add", "Cộng XP cho thành viên (quản trị)"),
             ("/xp-remove", "Trừ XP của thành viên (quản trị)"),
             ("/xp-set", "Đặt XP cho thành viên (quản trị)"),
-            ("/rank-reset", "Xóa dữ liệu XP (quản trị)"),
+            ("/rank-remove", "Xóa XP của 1 thành viên (quản trị)"),
+            ("/rank-reset", "Xóa toàn bộ dữ liệu XP của server (quản trị)"),
             ("/setleaderboardchannel", "Đặt kênh hiển thị bảng xếp hạng tự động (quản trị)"),
+            ("/xpchannels", "Chọn kênh nào được cộng XP (quản trị)"),
         ],
     ),
     "Quản trị": (

@@ -27,11 +27,35 @@ Dùng `/setleaderboardchannel #kênh` để bot ghim một ảnh bảng xếp h�
 | --- | --- |
 | Nhắn tin (cộng XP) | Cập nhật, gộp các thay đổi liên tiếp trong 30s thành một lần |
 | `/xp-add`, `/xp-remove`, `/xp-set` | Cập nhật ngay lập tức |
-| `/rank-reset` | Cập nhật ngay (không còn treo ảnh cũ) |
+| `/rank-remove`, `/rank-reset` | Cập nhật ngay (không còn treo ảnh cũ) |
 | Thành viên rời server | Bỏ khỏi bảng xếp hạng, cập nhật ngay |
 | Tin nhắn bị xoá / bot mất quyền | Tự gửi lại tin nhắn mới |
 
 Bảng xếp hạng chỉ hiển thị thành viên **đang còn trong server** và đang có XP. Dữ liệu XP của thành viên đã rời vẫn được giữ lại, nếu họ quay lại server thì lấy lại đúng thứ hạng cũ.
+
+### ⚡ Điều kiện được cộng XP
+
+Mặc định mọi tin nhắn của thành viên đều cộng XP, trừ hai trường hợp:
+
+| Trường hợp | Ghi chú |
+| --- | --- |
+| Tin nhắn là **lệnh prefix** (`!rank`, `?help`, ...) | Không cộng XP — chỉ lệnh **thực sự tồn tại** mới bị bỏ qua, nên tin nhắn thường bắt đầu bằng `!` vẫn được cộng XP |
+| Tin nhắn ở **kênh không được chọn** | Dùng `/xpchannels` để giới hạn |
+
+Lệnh `/xpchannels`:
+
+| Lệnh | Tác dụng |
+| --- | --- |
+| `/xpchannels show` | Xem hiện đang cộng XP ở kênh nào |
+| `/xpchannels list action:Thêm channel:#chat` | Thêm kênh vào danh sách cộng XP |
+| `/xpchannels list action:Gỡ channel:#chat` | Gỡ kênh khỏi danh sách |
+| `/xpchannels reset` | Bỏ giới hạn — mọi kênh đều cộng XP (mặc định) |
+
+Gỡ hết kênh khỏi danh sách cũng tương đương với `/xpchannels reset`.
+
+### 🗑️ Xoá XP của một thành viên
+
+`/rank-remove @thành_viên` (quản trị) xoá toàn bộ XP của đúng một thành viên và cập nhật lại ảnh bảng xếp hạng ngay lập tức — khác với `/rank-reset` xoá sạch XP của cả server.
 
 ## 🚀 Cài đặt & chạy
 
