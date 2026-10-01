@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from copy import deepcopy
 from typing import Any
 
 from utils.cache import TTLCache
 from utils.constants import DEFAULT_PREFIX
+
+logger = logging.getLogger("codi")
 
 # ---------------------------------------------------------------
 # Cấu hình mặc định cho từng server
@@ -80,6 +83,21 @@ class GuildConfigRepository:
         if doc is None:
             doc = self._default(guild_id)
             await self._collection.insert_one(doc)
+            return doc
+        return await self._migrate(guild_id, doc)
+
+    async def _migrate(self, guild_id: int, doc: dict[str, Any]) -> dict[str, Any]:
+        """Bổ sung các khoá cấu hình còn thiếu (config tạo từ phiên bản cũ).
+
+        Ví dụ server đã có trước khi thêm tính năng leaderboard sẽ không có
+        khoá 'leaderboard', khiến updater im lặng không hoạt động.
+        """
+        missing = {k: v for k, v in DEFAULT_GUILD_CONFIG.items() if k not in doc}
+        if not missing:
+            return doc
+        logger.info("Bổ sung cấu hình thiếu cho guild %s: %s", guild_id, list(missing))
+        await self.update(guild_id, missing)
+        doc.update(missing)
         return doc
 
     async def update(self, guild_id: int, updates: dict[str, Any]) -> None:

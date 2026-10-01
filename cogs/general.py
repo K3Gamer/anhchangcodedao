@@ -57,7 +57,11 @@ HELP_CATEGORIES: CategoryMap = {
         [
             ("/rank", "Xem thẻ cấp độ XP (ảnh)"),
             ("/leaderboard", "Xem bảng xếp hạng XP hình ảnh"),
+            ("/xp-add", "Cộng XP cho thành viên (quản trị)"),
+            ("/xp-remove", "Trừ XP của thành viên (quản trị)"),
+            ("/xp-set", "Đặt XP cho thành viên (quản trị)"),
             ("/rank-reset", "Xóa dữ liệu XP (quản trị)"),
+            ("/setleaderboardchannel", "Đặt kênh hiển thị bảng xếp hạng tự động (quản trị)"),
         ],
     ),
     "Quản trị": (

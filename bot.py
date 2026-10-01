@@ -47,6 +47,12 @@ async def main() -> None:
     except KeyboardInterrupt:
         logger.info("Bot đã bị dừng bởi người dùng.")
     finally:
+        # Dừng updater trước khi đóng storage, nếu không task nền còn chạy sẽ
+        # gọi vào database đã đóng và ghi log lỗi liên tục lúc tắt bot.
+        try:
+            await updater.stop()
+        except Exception:
+            logger.debug("Không dừng được LeaderboardUpdater", exc_info=True)
         await Database.close()
 
 

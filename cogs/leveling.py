@@ -11,6 +11,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from core.checks import is_admin
+from services.leveling import LEADERBOARD_SIZE
 
 logger = logging.getLogger("codi")
 
@@ -37,11 +38,31 @@ class Leveling(commands.Cog):
             result = await self.service.grant_xp(message.guild.id, message.author.id)
             # Thông báo updater nếu XP thực sự thay đổi
             if result is not None:
-                updater = getattr(self.bot, "leaderboard_updater", None)
-                if updater:
-                    await updater.notify_xp_change(message.guild.id)
+                await self._notify_leaderboard(message.guild.id, debounced=True)
         except Exception:
             logger.exception("Lỗi khi cộng XP cho %s", message.author.id)
+
+    # ================================================================
+    # Sự kiện: thành viên rời server -> bỏ khỏi bảng xếp hạng
+    # ================================================================
+    @commands.Cog.listener()
+    async def on_member_remove(self, member: discord.Member) -> None:
+        """Bảng xếp hạng chỉ nên chứa thành viên đang ở trong server."""
+        if member.bot or self.service is None:
+            return
+        try:
+            await self._notify_leaderboard(member.guild.id)
+        except Exception:
+            logger.exception("Lỗi cập nhật leaderboard sau khi %s rời server", member.id)
+
+    # ================================================================
+    # Sự kiện: bot bị gỡ khỏi server -> dọn trạng thái
+    # ================================================================
+    @commands.Cog.listener()
+    async def on_guild_remove(self, guild: discord.Guild) -> None:
+        updater = getattr(self.bot, "leaderboard_updater", None)
+        if updater is not None:
+            updater.forget(guild.id)
 
     # ================================================================
     # /rank — thẻ level của thành viên (ảnh)
@@ -64,7 +85,7 @@ class Leveling(commands.Cog):
             rank = 0
         else:
             level = doc["level"]
-            xp = doc.get("total_xp", 0)
+            xp = int(doc.get("total_xp") or 0)
             rank = doc["rank"]
 
         xp_in_level, xp_to_next, _, _ = self.service.level_progress(xp)
@@ -73,7 +94,7 @@ class Leveling(commands.Cog):
         file = discord.File(io.BytesIO(image), filename="rank.png")
 
         # Số thứ hạng hợp lệ
-        rank_display = rank if rank and rank > 0 else "#—"
+        rank_display = f"#{rank}" if rank > 0 else "#—"
         embed = self.bot.embeds.base(
             title=f"🏆 Cấp độ của {member.display_name}",
             description=(
@@ -95,44 +116,20 @@ class Leveling(commands.Cog):
     async def leaderboard(self, interaction: discord.Interaction) -> None:
         await interaction.response.defer()
 
-        top_docs = await self.service.get_top(interaction.guild_id, limit=10)
-        if not top_docs:
-            embed = self.bot.embeds.info(
-                "Chưa có dữ liệu XP nào. Hãy hoạt động để bắt đầu tích lũy XP!"
-            )
-            await interaction.followup.send(embed=embed)
-            return
-
-        entries: list[tuple[str, str, int]] = []
-        for doc in top_docs:
-            if doc.get("total_xp", 0) <= 0:
-                continue
-            user = self.bot.get_user(doc.get("user_id", 0))
-            if user:
-                avatar = user.display_avatar.url
-                if isinstance(user, discord.Member):
-                    name = user.display_name
-                else:
-                    name = user.display_name if hasattr(user, "display_name") else user.name
-            else:
-                avatar = ""
-                name = "Thành viên ẩn"
-            entries.append((avatar, name, doc.get("total_xp", 0)))
-
-        if not entries:
-            embed = self.bot.embeds.info(
-                "Chưa có thành viên nào có XP. Hãy hoạt động để bắt đầu tích lũy XP!"
-            )
-            await interaction.followup.send(embed=embed)
-            return
-
         try:
-            image = await self.service.build_leaderboard_image(
-                interaction.guild_id, entries, top=3
+            entries, image = await self.service.render_leaderboard(
+                interaction.guild, limit=LEADERBOARD_SIZE, top=3
             )
         except Exception:
             logger.exception("Không nạp được ảnh leaderboard")
             embed = self.bot.embeds.error("Không thể tạo ảnh bảng xếp hạng. Vui lòng thử lại.")
+            await interaction.followup.send(embed=embed)
+            return
+
+        if not entries:
+            embed = self.bot.embeds.info(
+                "Chưa có ai tích lũy XP. Hãy hoạt động để bắt đầu tích luỹ XP!"
+            )
             await interaction.followup.send(embed=embed)
             return
 
@@ -227,6 +224,9 @@ class Leveling(commands.Cog):
     async def rank_reset(self, interaction: discord.Interaction) -> None:
         await interaction.response.defer(ephemeral=True)
         count = await self.service.reset_guild(interaction.guild_id)
+        # Dữ liệu đã bị xoá -> bảng xếp hạng trong kênh phải cập nhật ngay,
+        # nếu không sẽ còn treo ảnh của bảng xếp hạng cũ.
+        await self._notify_leaderboard(interaction.guild_id)
         embed = self.bot.embeds.info(
             f"Đã xóa dữ liệu XP của **{count}** thành viên trong server."
         )
@@ -235,9 +235,14 @@ class Leveling(commands.Cog):
     # ================================================================
     # Hỗ trợ — thông báo updater leaderboard
     # ================================================================
-    async def _notify_leaderboard(self, guild_id: int) -> None:
+    async def _notify_leaderboard(self, guild_id: int, debounced: bool = False) -> None:
+        """Báo cho updater biết bảng xếp hạng cần cập nhật."""
         updater = getattr(self.bot, "leaderboard_updater", None)
-        if updater:
+        if updater is None:
+            return
+        if debounced:
+            await updater.notify_xp_change(guild_id)
+        else:
             await updater.force_update(guild_id)
 
     # ================================================================
@@ -246,15 +251,11 @@ class Leveling(commands.Cog):
     async def _render_rank_card(
         self, member: discord.Member, level: int, xp: int, rank: int
     ) -> bytes:
-        from utils.leaderboard_image import LeaderboardRenderer
-
-        renderer = LeaderboardRenderer()
-        from services.leveling import LevelingService
-        _, _, _, ratio = LevelingService.level_progress(xp)
-        avatar = member.display_avatar.url
-        rank_display = f"#{rank}" if rank and rank > 0 else "#—"
-        return await renderer.render(
-            [(avatar, member.display_name, xp, ratio)],
+        _, _, _, ratio = self.service.level_progress(xp)
+        rank_display = f"#{rank}" if rank > 0 else "#—"
+        return await self.service.build_leaderboard_image(
+            member.guild.id,
+            [(member.display_avatar.url, member.display_name, xp)],
             top=0,
             title=f"Cấp độ {level} · Hạng {rank_display}",
         )

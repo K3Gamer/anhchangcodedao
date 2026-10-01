@@ -22,29 +22,38 @@ class LevelRepository:
         )
 
     async def get_top(self, guild_id: int, limit: int = 10) -> list[dict[str, Any]]:
-        """Lấy danh sách thành viên xếp hạng theo tổng XP (cao nhất trước)."""
-        cursor = self._collection.find({"guild_id": guild_id}).sort("total_xp", -1)
+        """Lấy danh sách thành viên xếp hạng theo tổng XP (cao nhất trước).
+
+        Chỉ trả về thành viên đang có XP (> 0). Khi bằng XP thì sắp theo user_id
+        để thứ tự luôn ổn định giữa các lần cập nhật.
+        """
+        if limit is not None and limit <= 0:
+            return []
+        cursor = self._collection.find(
+            {"guild_id": guild_id, "total_xp": {"$gt": 0}}
+        ).sort(("total_xp", "user_id"), -1)
         return await cursor.to_list(length=limit)
 
     async def get_rank(self, guild_id: int, user_id: int) -> int:
-        """Trả về thứ hạng của thành viên (1 = cao nhất). 0 nếu chưa có XP."""
-        above = await self._collection.count_documents(
-            {"guild_id": guild_id, "total_xp": {"$gt": 0}, "user_id": {"$ne": user_id}}
-        )
-        # Đếm số người có total_xp > mình
+        """Trả về thứ hạng của thành viên (1 = cao nhất). 0 nếu chưa có XP.
+
+        Thứ hạng = 1 + số thành viên có XP cao hơn. Thành viên bằng XP sẽ
+        dùng chung một thứ hạng (1, 2, 2, 4...).
+        """
         me = await self.get(guild_id, user_id)
         if me is None:
             return 0
-        cursor = self._collection.find(
-            {"guild_id": guild_id, "user_id": {"$ne": user_id}}
-        ).sort("total_xp", -1)
-        rows = await cursor.to_list(length=None)
-        my_xp = me.get("total_xp", 0)
-        rank = 1
-        for row in rows:
-            if row.get("total_xp", 0) > my_xp:
-                rank += 1
-        return rank
+        my_xp = int(me.get("total_xp") or 0)
+        if my_xp <= 0:
+            return 0
+        above = await self._collection.count_documents(
+            {
+                "guild_id": guild_id,
+                "user_id": {"$ne": user_id},
+                "total_xp": {"$gt": my_xp},
+            }
+        )
+        return above + 1
 
     # ---------------------------------------------------------------
     # Ghi

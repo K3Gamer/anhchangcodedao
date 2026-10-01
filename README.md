@@ -19,6 +19,20 @@ Discord Bot quản trị & hỗ trợ cộng đồng lập trình **"Code vì Đ
 
 Toàn bộ **Buttons / Views / Modals / Select Menus** đều là **Persistent** — hoạt động tốt kể cả khi bot restart.
 
+### 🏆 Bảng xếp hạng tự động
+
+Dùng `/setleaderboardchannel #kênh` để bot ghim một ảnh bảng xếp hạng vào kênh đó. Từ đó **mọi thay đổi XP đều tự động cập nhật lại ảnh đó** (sửa đè cùng một tin nhắn, không spam tin mới):
+
+| Nguồn thay đổi | Phản ứng |
+| --- | --- |
+| Nhắn tin (cộng XP) | Cập nhật, gộp các thay đổi liên tiếp trong 30s thành một lần |
+| `/xp-add`, `/xp-remove`, `/xp-set` | Cập nhật ngay lập tức |
+| `/rank-reset` | Cập nhật ngay (không còn treo ảnh cũ) |
+| Thành viên rời server | Bỏ khỏi bảng xếp hạng, cập nhật ngay |
+| Tin nhắn bị xoá / bot mất quyền | Tự gửi lại tin nhắn mới |
+
+Bảng xếp hạng chỉ hiển thị thành viên **đang còn trong server** và đang có XP. Dữ liệu XP của thành viên đã rời vẫn được giữ lại, nếu họ quay lại server thì lấy lại đúng thứ hạng cũ.
+
 ## 🚀 Cài đặt & chạy
 
 ### 1. Yêu cầu

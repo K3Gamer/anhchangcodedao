@@ -66,6 +66,22 @@ def _set_path(doc: dict[str, Any], key: str, value: Any) -> None:
     cur[parts[-1]] = value
 
 
+def _sort_value(value: Any) -> tuple[int, Any]:
+    """Chuẩn hoá giá trị thành khoá so sánh được.
+
+    Bảng xếp hạng sắp theo 'total_xp' vốn có thể vắng mặt (None) ở một số
+    document, nếu so sánh thẳng int với None/str sẽ ném TypeError.
+    Nhóm ưu tiên: None (0) < số (1) < chuỗi (2).
+    """
+    if value is None:
+        return (0, 0)
+    if isinstance(value, bool):
+        return (1, int(value))
+    if isinstance(value, (int, float)):
+        return (1, value)
+    return (2, str(value))
+
+
 # ---------------------------------------------------------------
 # Collection
 # ---------------------------------------------------------------
@@ -76,21 +92,24 @@ class JsonCursor:
     def __init__(self, collection: "JsonCollection", query: dict[str, Any]) -> None:
         self._collection = collection
         self._query = query
-        self._sort_key: str | None = None
-        self._reverse = False
+        self._sort_keys: list[tuple[str, int]] = []
 
-    def sort(self, key: str, direction: int = 1) -> "JsonCursor":
-        self._sort_key = key
-        self._reverse = direction < 0
+    def sort(self, key: str | tuple[str, ...], direction: int = 1) -> "JsonCursor":
+        """Sắp xếp theo 1 key, hoặc nhiều key (tuple) theo thứ tự ưu tiên."""
+        keys = (key,) if isinstance(key, str) else tuple(key)
+        self._sort_keys = [(k, direction) for k in keys]
         return self
 
     async def to_list(self, length: int | None = None) -> list[dict[str, Any]]:
         items = await self._collection._find(self._query)
-        if self._sort_key:
+        # Sắp xếp từ key ít ưu tiên nhất để sort() ổn định cho key trước đó.
+        for sort_key, direction in reversed(self._sort_keys):
             items.sort(
-                key=lambda d: _get_path(d, self._sort_key) or "",
-                reverse=self._reverse,
+                key=lambda d: _sort_value(_get_path(d, sort_key)),
+                reverse=direction < 0,
             )
+        if length is not None and length >= 0:
+            return items[:length]
         return items
 
 
@@ -147,13 +166,65 @@ class JsonCollection:
 
     # ----- Query -----
     @staticmethod
-    def _match(doc: dict[str, Any], query: dict[str, Any]) -> bool:
-        for key, expected in query.items():
-            actual = _get_path(doc, key)
-            if isinstance(expected, dict) and set(expected) == {"$in"}:
-                if actual not in expected["$in"]:
+    def _is_operator_expr(expected: Any) -> bool:
+        """Dict chỉ chứa toán tử $xxx mới được hiểu là điều kiện, còn lại là so sánh bằng."""
+        return (
+            isinstance(expected, dict)
+            and bool(expected)
+            and all(isinstance(k, str) and k.startswith("$") for k in expected)
+        )
+
+    @staticmethod
+    def _match_operators(actual: Any, expected: Any) -> bool:
+        """So khớp một giá trị với điều kiện dạng toán tử Mongo ($gt, $ne...)."""
+        if not JsonCollection._is_operator_expr(expected):
+            return actual == expected
+
+        for op, operand in expected.items():
+            if op == "$in":
+                if actual not in operand:
                     return False
-            elif actual != expected:
+            elif op == "$nin":
+                if actual in operand:
+                    return False
+            elif op == "$ne":
+                if actual == operand:
+                    return False
+            elif op == "$exists":
+                if (actual is not None) != bool(operand):
+                    return False
+            # So sánh số: field vắng mặt coi như 0 để $gt/$lt hoạt động đúng.
+            elif op in ("$gt", "$gte", "$lt", "$lte"):
+                if actual is None:
+                    if op in ("$gt", "$gte"):
+                        left: Any = 0
+                    else:
+                        return False
+                else:
+                    left = actual
+                try:
+                    if op == "$gt":
+                        if not left > operand:
+                            return False
+                    elif op == "$gte":
+                        if not left >= operand:
+                            return False
+                    elif op == "$lt":
+                        if not left < operand:
+                            return False
+                    else:
+                        if not left <= operand:
+                            return False
+                except TypeError:
+                    return False
+            else:
+                raise ValueError(f"Toán tử không được hỗ trợ: {op}")
+        return True
+
+    @classmethod
+    def _match(cls, doc: dict[str, Any], query: dict[str, Any]) -> bool:
+        for key, expected in query.items():
+            if not cls._match_operators(_get_path(doc, key), expected):
                 return False
         return True
 
