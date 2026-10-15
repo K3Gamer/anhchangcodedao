@@ -27,6 +27,7 @@ COGS: tuple[str, ...] = (
     "cogs.warnings",
     "cogs.tickets",
     "cogs.automod",
+    "cogs.autox",
     "cogs.antinuke",
     "cogs.logging",
     "cogs.settings",
@@ -65,6 +66,7 @@ class CodiBot(commands.Bot):
         self.start_time = datetime.now(timezone.utc)
         self.owner_ids: set[int] = set()
         self.leaderboard_updater: Any = None
+        self.runner_service: Any = None
 
     # ------------------------------------------------------------------
     # Prefix

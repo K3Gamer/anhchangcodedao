@@ -72,6 +72,8 @@ DEFAULT_GUILD_CONFIG: dict[str, Any] = {
     },
     "automod": DEFAULT_AUTOMOD,
     "antinuke": DEFAULT_ANTINUKE,
+    # Danh sách id thành viên bị AutoX: mọi tin nhắn của họ sẽ bị bot tự xóa.
+    "autox": [],
 }
 
 
