@@ -11,6 +11,7 @@ from core.database import Database
 from core.logging import setup_logging
 from database.guild_config import GuildConfigManager
 from services.leveling import LevelingService
+from services.runner import RunnerService
 from utils.crash_log import install as install_crash_log, log_fatal_to_file
 from utils.leaderboard_updater import LeaderboardUpdater
 
@@ -37,6 +38,7 @@ async def main() -> None:
     bot.db = Database.get_db()
     bot.config_manager = GuildConfigManager(bot.db)
     bot.leveling_service = LevelingService(bot.db)
+    bot.runner_service = RunnerService()
 
     updater = LeaderboardUpdater(bot)
     bot.leaderboard_updater = updater

@@ -8,7 +8,8 @@ on:
     - cron: "10 */6 * * *"
 
 permissions:
-  contents: write
+  contents: write   # day du lieu len nhanh `data`
+  actions: write    # lenh /restart tao workflow run moi
 
 concurrency:
   group: discord-bot
