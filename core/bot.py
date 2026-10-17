@@ -27,7 +27,6 @@ COGS: tuple[str, ...] = (
     "cogs.warnings",
     "cogs.tickets",
     "cogs.automod",
-    "cogs.autox",
     "cogs.antinuke",
     "cogs.logging",
     "cogs.settings",
