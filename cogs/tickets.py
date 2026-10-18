@@ -42,10 +42,11 @@ class Tickets(commands.Cog):
         if target is None or not isinstance(target, discord.TextChannel):
             raise BotError("Kênh không hợp lệ.")
 
+        guild_name = interaction.guild.name if interaction.guild else "cộng đồng"
         embed = self.bot.embeds.base(
             title="💡 Góp ý cho cộng đồng",
             description=(
-                "Bạn có ý tưởng, đề xuất hoặc phản hồi nào cho cộng đồng **Code vì Đam Mê**?\n\n"
+                f"Bạn có ý tưởng, đề xuất hoặc phản hồi nào cho cộng đồng **{guild_name}**?\n\n"
                 "Hãy nhấn nút **💡 Góp ý** bên dưới để tạo một ticket riêng tư.\n"
                 "Đội ngũ staff sẽ phản hồi bạn trong thời gian sớm nhất."
             ),
